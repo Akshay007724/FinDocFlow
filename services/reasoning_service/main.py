@@ -2,12 +2,14 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
-from typing import Optional
+from typing import AsyncIterator, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from ollama_client import OllamaClient
@@ -18,7 +20,19 @@ logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="FinDocFlow Reasoning Service", version="1.0.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+_cors_origins = [
+    o.strip()
+    for o in os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8501").split(",")
+    if o.strip()
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
+    allow_credentials=True,
+)
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://ollama:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llava")
@@ -100,6 +114,63 @@ async def reason(req: ReasonRequest):
     )
 
 
+def _sse(event: str, data: dict) -> bytes:
+    return f"event: {event}\ndata: {json.dumps(data, default=str)}\n\n".encode()
+
+
+@app.post("/reason/stream")
+async def reason_stream(req: ReasonRequest):
+    """Server-Sent Events stream of THINK → ACT → VERIFY phases."""
+    if not _agent:
+        raise HTTPException(503, "Reasoning agent not ready")
+    if not req.pages:
+        raise HTTPException(400, "At least one page required")
+    pages_dicts = [p.model_dump() for p in req.pages]
+
+    async def gen() -> AsyncIterator[bytes]:
+        loop = asyncio.get_event_loop()
+        try:
+            # Run the full reason in a worker, then chunk-emit the phases in order.
+            result: ReasoningResult = await loop.run_in_executor(
+                None,
+                _agent.reason,
+                req.question,
+                pages_dicts,
+                req.entities,
+                req.graph_context,
+                req.relevant_page_indices,
+            )
+            # Emit phases as discrete events for the UI to display progress
+            yield _sse("think", {"content": result.think})
+            await asyncio.sleep(0)
+            yield _sse("act", {"content": result.act})
+            await asyncio.sleep(0)
+            yield _sse("verify", {"content": result.verify})
+            await asyncio.sleep(0)
+            yield _sse(
+                "done",
+                {
+                    "question": result.question,
+                    "answer": result.answer,
+                    "confidence": result.confidence,
+                    "cited_pages": result.cited_pages,
+                    "think": result.think,
+                    "act": result.act,
+                    "verify": result.verify,
+                    "iterations": result.iterations,
+                },
+            )
+        except Exception as exc:
+            logger.exception("SSE /reason/stream failed")
+            yield _sse("error", {"message": str(exc)})
+
+    return StreamingResponse(
+        gen(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
 # ── Report generation endpoint ────────────────────────────────────────────────
 
 class ReportRequest(BaseModel):
@@ -122,6 +193,80 @@ async def generate_report(req: ReportRequest):
         None, _report_gen.generate_report, pages_dicts, req.section_ids, req.entities
     )
     return result
+
+
+@app.post("/report/stream")
+async def generate_report_stream(req: ReportRequest):
+    """SSE: section_start → section_done per requested section, up to 4 in parallel."""
+    if not _report_gen:
+        raise HTTPException(503, "Report generator not ready")
+    if not req.pages:
+        raise HTTPException(400, "At least one page required")
+    if not req.section_ids:
+        raise HTTPException(400, "At least one section required")
+
+    pages_dicts = [p.model_dump() for p in req.pages]
+    prompts_data = load_prompts()
+    section_map = {s["id"]: s for s in prompts_data.get("sections", [])}
+
+    async def gen() -> AsyncIterator[bytes]:
+        loop = asyncio.get_event_loop()
+        queue: asyncio.Queue[dict] = asyncio.Queue()
+        remaining = 0
+
+        async def worker(sid: str):
+            nonlocal remaining
+            section = section_map.get(sid)
+            if not section:
+                await queue.put({"kind": "error", "message": f"Unknown section: {sid}"})
+                remaining -= 1
+                return
+            await queue.put({"kind": "section_start", "id": sid, "label": section.get("label", sid)})
+            try:
+                result = await loop.run_in_executor(
+                    None,
+                    _report_gen.generate_section,
+                    sid,
+                    section.get("prompt", ""),
+                    pages_dicts,
+                    req.entities,
+                )
+                markdown = result.get("content") or ""
+                await queue.put({"kind": "section_done", "id": sid, "markdown": markdown})
+            except Exception as exc:
+                logger.exception("section %s failed", sid)
+                await queue.put({"kind": "error", "message": f"{sid}: {exc}"})
+            finally:
+                remaining -= 1
+
+        # Fan out — concurrency cap handled by executor thread pool
+        tasks = []
+        for sid in req.section_ids:
+            remaining += 1
+            tasks.append(asyncio.create_task(worker(sid)))
+
+        try:
+            while remaining > 0 or not queue.empty():
+                try:
+                    ev = await asyncio.wait_for(queue.get(), timeout=1.0)
+                except asyncio.TimeoutError:
+                    continue
+                kind = ev.pop("kind")
+                yield _sse(kind, ev)
+            yield _sse("report_done", {})
+        except Exception as exc:
+            logger.exception("SSE /report/stream failed")
+            yield _sse("error", {"message": str(exc)})
+        finally:
+            for t in tasks:
+                if not t.done():
+                    t.cancel()
+
+    return StreamingResponse(
+        gen(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 # ── Chat endpoint ─────────────────────────────────────────────────────────────

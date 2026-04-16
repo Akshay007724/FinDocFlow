@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Optional
 
 import redis.asyncio as aioredis
-from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
+from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl
 
@@ -26,7 +26,19 @@ logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="FinDocFlow Ingestion Service", version="1.0.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+_cors_origins = [
+    o.strip()
+    for o in os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8501").split(",")
+    if o.strip()
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
+    allow_credentials=True,
+)
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
 KAFKA_BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
@@ -233,6 +245,60 @@ async def _set_job_status(job_id: str, status: str, progress: int, message: str,
         data["doc_ids"] = ",".join(doc_ids)
     await _redis.hset(f"job:{job_id}", mapping=data)
     await _redis.expire(f"job:{job_id}", 86400)
+
+
+# ── WebSocket for live ingest progress ─────────────────────────────────────
+
+@app.websocket("/ingest/ws/{job_id}")
+async def ingest_ws(websocket: WebSocket, job_id: str):
+    """Push JobStatus updates from Redis to the client until the job settles."""
+    await websocket.accept()
+    last_snapshot: Optional[str] = None
+    try:
+        while True:
+            data = await _redis.hgetall(f"job:{job_id}")
+            if not data:
+                await websocket.send_json({
+                    "job_id": job_id,
+                    "status": "unknown",
+                    "progress": 0,
+                    "message": "Job not found",
+                    "doc_ids": [],
+                })
+                break
+            payload = {
+                "job_id": job_id,
+                "status": data.get("status", "unknown"),
+                "progress": int(data.get("progress", 0)),
+                "message": data.get("message", ""),
+                "doc_ids": data.get("doc_ids", "").split(",") if data.get("doc_ids") else [],
+            }
+            snapshot = json.dumps(payload, sort_keys=True)
+            if snapshot != last_snapshot:
+                await websocket.send_json(payload)
+                last_snapshot = snapshot
+            if payload["status"] in ("done", "failed"):
+                break
+            await asyncio.sleep(0.5)
+    except WebSocketDisconnect:
+        logger.debug("Client disconnected from job %s ws", job_id)
+    except Exception as exc:
+        logger.exception("ws error for job %s: %s", job_id, exc)
+        try:
+            await websocket.send_json({
+                "job_id": job_id,
+                "status": "failed",
+                "progress": 0,
+                "message": f"server error: {exc}",
+                "doc_ids": [],
+            })
+        except Exception:
+            pass
+    finally:
+        try:
+            await websocket.close()
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":

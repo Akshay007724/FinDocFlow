@@ -1,0 +1,100 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root,
+  .dark {
+    /* Financial Dashboard Dark OLED — from design-system/findocflow/MASTER.md */
+    --background: 229 64% 4%;          /* #020617 */
+    --foreground: 210 40% 98%;         /* #F8FAFC */
+
+    --card: 228 40% 10%;               /* #0E1223 */
+    --card-foreground: 210 40% 98%;
+
+    --popover: 228 40% 10%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217 91% 60%;            /* #2563EB */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 40% 15%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 227 27% 14%;              /* #1A1E2F */
+    --muted-foreground: 215 20% 65%;   /* #94A3B8 */
+
+    --accent: 142 71% 45%;             /* #22C55E */
+    --accent-foreground: 229 64% 4%;
+
+    --warning: 38 92% 50%;             /* #F59E0B */
+    --warning-foreground: 229 64% 4%;
+
+    --destructive: 0 84% 60%;          /* #EF4444 */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 215 25% 27%;             /* #334155 */
+    --input: 227 27% 14%;
+    --ring: 217 91% 60%;
+
+    --radius: 0.625rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  /* Tabular numerics by default on data surfaces */
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Focus-visible ring for keyboard users only */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Reduced-motion: disable non-essential motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0ms !important;
+      transition-duration: 0ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Shimmer for skeletons */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--card)) 40%,
+      hsl(var(--muted)) 80%
+    );
+    background-size: 800px 100%;
+    @apply animate-shimmer;
+  }
+
+  /* Pulse dot for live status */
+  .live-dot {
+    @apply relative inline-block h-2 w-2 rounded-full bg-accent;
+  }
+
+  .live-dot::after {
+    content: "";
+    @apply absolute inset-0 rounded-full bg-accent animate-pulse-dot;
+  }
+
+  /* Subtle OLED glow on active nav item */
+  .nav-glow {
+    box-shadow: inset 2px 0 0 0 hsl(var(--primary));
+  }
+}
