@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FinDocBench QA Pair",
+  "description": "Schema for multi-page financial document QA benchmark entries",
+  "type": "object",
+  "required": ["qa_id", "doc_id", "question", "answer", "supporting_pages", "question_type", "modalities_used"],
+  "properties": {
+    "qa_id": {
+      "type": "string",
+      "description": "Unique QA pair identifier, e.g. qa_0001"
+    },
+    "doc_id": {
+      "type": "string",
+      "description": "Reference to parent document"
+    },
+    "company": {
+      "type": "string",
+      "description": "Company ticker or name"
+    },
+    "filing_year": {
+      "type": "integer",
+      "description": "Fiscal year of the filing"
+    },
+    "filing_type": {
+      "type": "string",
+      "enum": ["10-K", "10-Q", "8-K", "proxy", "prospectus"],
+      "description": "SEC filing type"
+    },
+    "question": {
+      "type": "string",
+      "description": "Natural language question requiring multi-page reasoning"
+    },
+    "answer": {
+      "type": "string",
+      "description": "Ground truth answer (concise)"
+    },
+    "answer_numeric": {
+      "type": ["number", "null"],
+      "description": "Numeric value if answer is a number (for EM evaluation)"
+    },
+    "supporting_pages": {
+      "type": "array",
+      "items": {"type": "integer"},
+      "description": "List of page numbers containing evidence for the answer",
+      "minItems": 2
+    },
+    "question_type": {
+      "type": "string",
+      "enum": [
+        "cross_page_numeric",
+        "cross_page_trend",
+        "cross_page_comparison",
+        "table_text_fusion",
+        "chart_text_fusion",
+        "multi_entity",
+        "temporal_reasoning"
+      ],
+      "description": "Category of reasoning required"
+    },
+    "modalities_used": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["text", "table", "chart", "xbrl"]
+      },
+      "description": "Document modalities required to answer"
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": ["easy", "medium", "hard"],
+      "description": "Human-assessed difficulty"
+    },
+    "annotator_id": {
+      "type": "string",
+      "description": "Annotator identifier"
+    }
+  }
+}

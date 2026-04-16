@@ -1,0 +1,41 @@
+# ── Local tooling ─────────────────────────────────────────────────────────
+.omc/
+.claude/settings.local.json
+
+# ── Draft / marketing (kept local, not published) ────────────────────────
+marketing/
+
+# ── Python ────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# ── Virtualenvs ───────────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+
+# ── Env / secrets ─────────────────────────────────────────────────────────
+.env
+.env.local
+*.pem
+*.key
+
+# ── Experiment artifacts ──────────────────────────────────────────────────
+experiments/results/
+
+# ── OS / editor ───────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo

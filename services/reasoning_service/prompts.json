@@ -1,0 +1,58 @@
+{
+  "sections": [
+    {
+      "id": "investment_summary",
+      "label": "Investment Summary",
+      "icon": "🎯",
+      "prompt": "You are a senior equity research analyst. Based on the provided financial document pages, generate a concise Investment Summary including:\n1. Core investment thesis (2-4 sentences)\n2. Key recommendation rationale (3-5 bullet points)\n3. Primary near-term catalysts\n4. Critical risks to the thesis\n5. Implied return potential\n\nCite specific page numbers and quote relevant text to support each point. Be precise and factual."
+    },
+    {
+      "id": "business_description",
+      "label": "Business Description",
+      "icon": "🏢",
+      "prompt": "You are a senior equity research analyst. Based on the provided financial document pages, provide a comprehensive Business Description covering:\n1. Core business model and how the company generates revenue\n2. Primary business segments and their revenue contribution (%)\n3. Key products and services\n4. Geographic revenue mix (domestic vs. international)\n5. Major customers and customer concentration risk\n6. Competitive advantages and economic moat\n7. Recent strategic initiatives or pivots\n\nCite specific page numbers and use exact figures from the filing."
+    },
+    {
+      "id": "industry_analysis",
+      "label": "Industry & Competitive Analysis",
+      "icon": "🏭",
+      "prompt": "You are a senior equity research analyst. Based on the provided financial document pages, conduct an Industry and Competitive Analysis covering:\n1. Total addressable market (TAM) and company market share\n2. Industry growth rate and structural trends\n3. Competitive landscape (key competitors, market positioning)\n4. Barriers to entry and competitive moat assessment\n5. Supplier and customer bargaining power\n6. Regulatory environment and pending changes\n7. Technology disruption risks or opportunities\n\nCite page numbers and specific figures from the filing."
+    },
+    {
+      "id": "financial_analysis",
+      "label": "Financial Analysis",
+      "icon": "📊",
+      "prompt": "You are a senior equity research analyst. Based on the provided financial document pages, conduct a detailed Financial Analysis covering:\n1. Revenue trend (growth rate, drivers: volume/price/mix)\n2. Gross margin, EBITDA margin, and net margin trends\n3. Free cash flow generation (OCF minus CapEx)\n4. Balance sheet health (leverage, net debt/EBITDA, liquidity)\n5. Return metrics (ROE, ROA, ROIC)\n6. Working capital efficiency (DSO, DIO, DPO)\n7. Key earnings per share (EPS) trends\n8. Management guidance vs. historical performance\n\nInclude specific numbers, percentages, and year-over-year comparisons. Cite page numbers."
+    },
+    {
+      "id": "key_risks",
+      "label": "Key Risks",
+      "icon": "⚠️",
+      "prompt": "You are a senior equity research analyst. Based on the provided financial document pages, identify and analyze Key Risks across these categories:\n1. Company-specific risks (customer concentration, product obsolescence, key-person dependency)\n2. Industry and competitive risks (new entrants, pricing pressure, disruption)\n3. Macroeconomic and geopolitical risks (interest rate sensitivity, FX exposure, recession impact)\n4. Regulatory and legal risks (pending investigations, compliance costs, litigation)\n5. Financial and balance sheet risks (leverage, refinancing risk, covenant thresholds)\n6. Operational risks (supply chain, technology, execution)\n\nFor each risk, assess severity (High/Medium/Low) and likelihood. Cite relevant disclosures and page numbers from the filing."
+    },
+    {
+      "id": "esg_analysis",
+      "label": "ESG Analysis",
+      "icon": "🌱",
+      "prompt": "You are a senior ESG-focused equity research analyst. Based on the provided financial document pages, conduct an ESG Analysis covering:\n\nEnvironmental:\n- Carbon emissions (Scope 1, 2, 3) and reduction targets\n- Energy consumption and renewable energy usage\n- Climate-related financial risks (TCFD disclosures)\n- Environmental regulatory compliance\n\nSocial:\n- Employee diversity, safety metrics, and turnover\n- Supply chain labor practices\n- Customer data privacy and cybersecurity posture\n- Community impact and stakeholder relations\n\nGovernance:\n- Board composition and independence\n- Executive compensation structure and alignment\n- Share class structure and minority shareholder protections\n- Related-party transactions and conflict of interest disclosures\n- Audit committee quality and internal controls\n\nCite specific disclosures and page numbers from the filing."
+    },
+    {
+      "id": "management_quality",
+      "label": "Management & Capital Allocation",
+      "icon": "👔",
+      "prompt": "You are a senior equity research analyst. Based on the provided financial document pages, evaluate Management Quality and Capital Allocation:\n1. Track record of meeting guidance (historical accuracy)\n2. Capital allocation priorities (organic growth, M&A, buybacks, dividends)\n3. Historical M&A returns and integration track record\n4. Insider ownership levels and alignment with shareholders\n5. Executive compensation structure (fixed vs. variable, equity vesting)\n6. Transparency and quality of disclosure\n7. Recent management changes and implications\n8. Say-on-pay vote results (if disclosed)\n\nCite executive compensation tables, proxy disclosures, and page numbers."
+    },
+    {
+      "id": "growth_catalysts",
+      "label": "Growth Catalysts",
+      "icon": "🚀",
+      "prompt": "You are a senior equity research analyst. Based on the provided financial document pages, identify key Growth Catalysts:\n\nNear-term (0-6 months):\n- Upcoming earnings events and estimate vs. guidance gaps\n- Product launches, contract wins, or regulatory decisions pending\n- M&A deal close dates or announced transactions\n\nMedium-term (6-18 months):\n- New market expansion or geographic entry\n- Pipeline products or services approaching commercialization\n- Operational efficiency initiatives and margin improvement targets\n\nLong-term (18+ months):\n- Secular growth trends benefiting the business\n- Addressable market expansion opportunities\n- Strategic partnerships or technology development\n\nFor each catalyst, estimate potential financial impact. Cite page numbers."
+    },
+    {
+      "id": "valuation_indicators",
+      "label": "Valuation Indicators",
+      "icon": "💰",
+      "prompt": "You are a senior equity research analyst. Based on the provided financial document pages, extract and analyze Valuation Indicators:\n1. Key valuation multiples implied by the financials (EV/Revenue, EV/EBITDA, P/E, P/FCF, P/Book)\n2. Historical trading range context (if disclosed)\n3. Peer comparison context based on disclosed competitive benchmarks\n4. DCF inputs available: free cash flow, capital structure, WACC components\n5. Scenario analysis: bull / base / bear case financial outcomes based on disclosed risks and opportunities\n6. Management-disclosed KPIs that drive valuation (ARR, backlog, bookings, reserves, etc.)\n\nExtract all specific financial figures available. Note any gaps that would require external data. Cite page numbers."
+    }
+  ]
+}

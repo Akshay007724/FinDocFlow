@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "findocflow.fullname" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "findocflow.labels" . | nindent 4 }}
+data:
+  # ── Kafka ──────────────────────────────────────────────────────────────────
+  KAFKA_BOOTSTRAP_SERVERS: {{ .Values.kafka.bootstrapServers | quote }}
+  KAFKA_TOPIC_RAW:          {{ .Values.kafka.topics.rawDocuments | quote }}
+  KAFKA_TOPIC_EXTRACTED:    {{ .Values.kafka.topics.extractedDocuments | quote }}
+  KAFKA_TOPIC_LINKED:       {{ .Values.kafka.topics.linkedDocuments | quote }}
+
+  # ── Redis ──────────────────────────────────────────────────────────────────
+  REDIS_URL: {{ .Values.redis.url | quote }}
+
+  # ── Neo4j ──────────────────────────────────────────────────────────────────
+  NEO4J_URI:  {{ .Values.neo4j.uri | quote }}
+  NEO4J_USER: {{ .Values.neo4j.user | quote }}
+
+  # ── MinIO / Iceberg ────────────────────────────────────────────────────────
+  MINIO_ENDPOINT:    {{ .Values.minio.endpoint | quote }}
+  ICEBERG_WAREHOUSE: {{ .Values.minio.icebergWarehouse | quote }}
+
+  # ── Ollama ─────────────────────────────────────────────────────────────────
+  OLLAMA_BASE_URL: {{ .Values.ollama.baseUrl | quote }}
+  OLLAMA_MODEL:    {{ .Values.ollama.model | quote }}
+
+  # ── Observability ──────────────────────────────────────────────────────────
+  LOG_LEVEL: {{ .Values.logLevel | quote }}

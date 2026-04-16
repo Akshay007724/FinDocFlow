@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: findocflow-config
+  namespace: findocflow
+data:
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+  KAFKA_TOPIC_RAW: "raw_documents"
+  KAFKA_TOPIC_EXTRACTED: "extracted_documents"
+  KAFKA_TOPIC_LINKED: "linked_documents"
+  REDIS_URL: "redis://redis:6379"
+  NEO4J_URI: "bolt://neo4j:7687"
+  NEO4J_USER: "neo4j"
+  MINIO_ENDPOINT: "http://minio:9000"
+  ICEBERG_WAREHOUSE: "s3a://findocflow/warehouse"
+  OLLAMA_BASE_URL: "http://ollama:11434"
+  OLLAMA_MODEL: "llama3.2"
+  LOG_LEVEL: "INFO"

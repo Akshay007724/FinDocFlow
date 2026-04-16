@@ -1,0 +1,154 @@
+# ── Global ─────────────────────────────────────────────────────────────────
+logLevel: INFO
+
+# ── Ingestion Service (port 8001) ───────────────────────────────────────────
+ingestion:
+  replicaCount: 2
+  image:
+    repository: findocflow/ingestion
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 8001
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+
+# ── Extraction Service (port 8002) ──────────────────────────────────────────
+extraction:
+  replicaCount: 1
+  image:
+    repository: findocflow/extraction
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 8002
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "2Gi"
+    limits:
+      cpu: "4"
+      memory: "8Gi"
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+
+# ── Entity Linking Service (port 8003) ──────────────────────────────────────
+entityLinking:
+  replicaCount: 1
+  image:
+    repository: findocflow/entity-linking
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 8003
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+
+# ── Reasoning Service (port 8004) ───────────────────────────────────────────
+reasoning:
+  replicaCount: 1
+  image:
+    repository: findocflow/reasoning
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 8004
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 2
+    targetCPUUtilizationPercentage: 70
+
+# ── Frontend Service (port 8501) ─────────────────────────────────────────────
+frontend:
+  replicaCount: 1
+  image:
+    repository: findocflow/frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 8501
+    type: LoadBalancer
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+# ── Kafka ────────────────────────────────────────────────────────────────────
+kafka:
+  bootstrapServers: "kafka:9092"
+  topics:
+    rawDocuments: "raw_documents"
+    extractedDocuments: "extracted_documents"
+    linkedDocuments: "linked_documents"
+
+# ── Redis ────────────────────────────────────────────────────────────────────
+redis:
+  url: "redis://redis:6379"
+
+# ── Neo4j ────────────────────────────────────────────────────────────────────
+neo4j:
+  uri: "bolt://neo4j:7687"
+  user: "neo4j"
+  # Override with --set neo4j.password=<value> or via a Secret
+  password: "findocflow"
+
+# ── MinIO ────────────────────────────────────────────────────────────────────
+minio:
+  endpoint: "http://minio:9000"
+  accessKey: "minioadmin"
+  secretKey: "minioadmin"
+  icebergWarehouse: "s3a://findocflow/warehouse"
+
+# ── Ollama ───────────────────────────────────────────────────────────────────
+ollama:
+  baseUrl: "http://ollama:11434"
+  model: "llama3.2"
+
+# ── Ingress ──────────────────────────────────────────────────────────────────
+ingress:
+  enabled: false
+  className: "nginx"
+  host: "findocflow.example.com"
+  annotations: {}
+  tls: []
+
+# ── Image pull secrets ────────────────────────────────────────────────────────
+imagePullSecrets: []
+
+# ── Name overrides ────────────────────────────────────────────────────────────
+nameOverride: ""
+fullnameOverride: ""

@@ -1,0 +1,13 @@
+apiVersion: v2
+name: findocflow
+description: Cross-page multimodal financial document reasoning pipeline
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - financial-nlp
+  - document-ai
+  - rag
+home: https://github.com/yourorg/findocflow
+maintainers:
+  - name: FinDocFlow Team

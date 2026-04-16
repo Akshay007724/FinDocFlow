@@ -1,0 +1,43 @@
+apiVersion: "sparkoperator.k8s.io/v1beta2"
+kind: SparkApplication
+metadata:
+  name: findocflow-document-processor
+  namespace: findocflow
+spec:
+  type: Python
+  pythonVersion: "3"
+  mode: cluster
+  image: findocflow/spark:latest
+  imagePullPolicy: Always
+  mainApplicationFile: "local:///opt/spark/jobs/document_processor.py"
+  sparkVersion: "3.5.1"
+  restartPolicy:
+    type: OnFailure
+    onFailureRetries: 3
+    onFailureRetryInterval: 10
+    onSubmissionFailureRetries: 5
+    onSubmissionFailureRetryInterval: 20
+  sparkConf:
+    "spark.sql.extensions": "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions"
+    "spark.sql.catalog.findocflow": "org.apache.iceberg.spark.SparkCatalog"
+    "spark.sql.catalog.findocflow.type": "hadoop"
+    "spark.sql.catalog.findocflow.warehouse": "s3a://findocflow/warehouse"
+    "spark.hadoop.fs.s3a.path.style.access": "true"
+  envFrom:
+    - configMapRef:
+        name: findocflow-config
+    - secretRef:
+        name: findocflow-secrets
+  driver:
+    cores: 1
+    coreLimit: "1200m"
+    memory: "1g"
+    labels:
+      version: "3.5.1"
+    serviceAccount: spark
+  executor:
+    cores: 2
+    instances: 2
+    memory: "2g"
+    labels:
+      version: "3.5.1"
