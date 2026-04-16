@@ -14,7 +14,9 @@ x-common-env: &common-env
   MINIO_SECRET_KEY: minioadmin
   ICEBERG_WAREHOUSE: s3a://findocflow/warehouse
   OLLAMA_BASE_URL: http://ollama:11434
-  OLLAMA_MODEL: llava
+  # llava = multimodal 7B (slow on CPU); llama3.2 = text-only 3B (much faster).
+  # Override per-service if you need vision.
+  OLLAMA_MODEL: llama3.2
   LOG_LEVEL: INFO
   CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:8501,http://frontend-next:3000,http://frontend:8501"
 

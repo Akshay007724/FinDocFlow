@@ -164,20 +164,29 @@ async def _process_upload(job_id: str, doc_id: str, filename: str, suffix: str, 
         )
         await _set_job_status(job_id, "processing", 60, f"Parsed {len(pages)} pages")
 
+        # Build Kafka payload with images only on the first IMAGE_PAGES_KAFKA
+        # pages to avoid blowing the broker's message size and downstream OOM.
+        IMAGE_PAGES_KAFKA = 10
+        IMAGE_PAGES_CACHE = 30
+        pages_for_kafka = []
+        for i, p in enumerate(pages):
+            d = p.model_dump()
+            if i >= IMAGE_PAGES_KAFKA:
+                d["images"] = []
+            pages_for_kafka.append(d)
         message = {
             "doc_id": doc_id,
             "filename": filename,
             "format": suffix.lstrip("."),
-            "pages": [p.model_dump() for p in pages],
+            "pages": pages_for_kafka,
             "total_pages": len(pages),
         }
         await _producer.send(message, key=doc_id)
-        # Store page text + images in Redis for frontend retrieval
-        # Images capped at 30 pages to limit memory usage
+        # Redis cache gets a more generous image cap for the UI viewer.
         pages_for_cache = []
         for i, p in enumerate(pages):
             d = p.model_dump()
-            if i >= 30:
+            if i >= IMAGE_PAGES_CACHE:
                 d["images"] = []
             pages_for_cache.append(d)
         await _redis.set(f"pages:{doc_id}", json.dumps(pages_for_cache), ex=86400)

@@ -1,8 +1,10 @@
 """THINK → ACT → VERIFY reasoning loop for multi-page financial Q&A."""
 from __future__ import annotations
 
+import asyncio
 import logging
 from dataclasses import dataclass, field
+from typing import AsyncIterator
 
 from ollama_client import OllamaClient
 
@@ -148,6 +150,84 @@ class ThinkActVerifyAgent:
             confidence=confidence,
             cited_pages=cited_pages,
         )
+
+    async def reason_steps(
+        self,
+        question: str,
+        pages: list[dict],
+        entities: list[dict],
+        graph_context: list[dict],
+        relevant_page_indices: list[int],
+    ) -> AsyncIterator[dict]:
+        """Async generator that yields {kind, ...} dicts per phase as each completes.
+
+        Yields events:
+            {"kind": "think", "content": str}
+            {"kind": "act",   "content": str}
+            {"kind": "verify","content": str}
+            {"kind": "done",  "payload": {... ReasoningResult fields ...}}
+        """
+        loop = asyncio.get_event_loop()
+
+        page_summaries = self._build_page_context(pages)
+        entity_summary = self._build_entity_summary(entities)
+
+        # THINK
+        think_prompt = THINK_TEMPLATE.format(
+            question=question, page_context=page_summaries, entities=entity_summary
+        )
+        think_response = await loop.run_in_executor(
+            None, self._ollama.generate, think_prompt, SYSTEM_PROMPT, 0.1
+        )
+        yield {"kind": "think", "content": think_response}
+
+        # ACT
+        top_indices = (relevant_page_indices or list(range(len(pages))))[: self.MAX_PAGES_IN_CONTEXT]
+        top_pages = [pages[i] for i in top_indices if i < len(pages)]
+        relevant_pages_text = self._build_page_context(top_pages)
+        act_prompt = ACT_TEMPLATE.format(question=question, relevant_pages=relevant_pages_text)
+        page_images = [img for p in top_pages for img in p.get("images", [])[:1]]
+        if page_images:
+            act_response = await loop.run_in_executor(
+                None,
+                self._ollama.generate_with_images,
+                act_prompt,
+                page_images[:5],
+                SYSTEM_PROMPT,
+                0.1,
+            )
+        else:
+            act_response = await loop.run_in_executor(
+                None, self._ollama.generate, act_prompt, SYSTEM_PROMPT, 0.1
+            )
+        yield {"kind": "act", "content": act_response}
+
+        # VERIFY
+        graph_str = self._build_graph_context(graph_context)
+        verify_prompt = VERIFY_TEMPLATE.format(
+            question=question, facts=act_response, graph_context=graph_str
+        )
+        verify_response = await loop.run_in_executor(
+            None, self._ollama.generate, verify_prompt, SYSTEM_PROMPT, 0.1
+        )
+        yield {"kind": "verify", "content": verify_response}
+
+        confidence = _extract_confidence(verify_response)
+        cited_pages = _extract_page_citations(verify_response)
+        answer = _extract_direct_answer(verify_response)
+        yield {
+            "kind": "done",
+            "payload": {
+                "question": question,
+                "answer": answer,
+                "confidence": confidence,
+                "cited_pages": cited_pages,
+                "think": think_response,
+                "act": act_response,
+                "verify": verify_response,
+                "iterations": 1,
+            },
+        }
 
     def _build_page_context(self, pages: list[dict]) -> str:
         lines = []

@@ -128,38 +128,16 @@ async def reason_stream(req: ReasonRequest):
     pages_dicts = [p.model_dump() for p in req.pages]
 
     async def gen() -> AsyncIterator[bytes]:
-        loop = asyncio.get_event_loop()
         try:
-            # Run the full reason in a worker, then chunk-emit the phases in order.
-            result: ReasoningResult = await loop.run_in_executor(
-                None,
-                _agent.reason,
+            async for ev in _agent.reason_steps(
                 req.question,
                 pages_dicts,
                 req.entities,
                 req.graph_context,
                 req.relevant_page_indices,
-            )
-            # Emit phases as discrete events for the UI to display progress
-            yield _sse("think", {"content": result.think})
-            await asyncio.sleep(0)
-            yield _sse("act", {"content": result.act})
-            await asyncio.sleep(0)
-            yield _sse("verify", {"content": result.verify})
-            await asyncio.sleep(0)
-            yield _sse(
-                "done",
-                {
-                    "question": result.question,
-                    "answer": result.answer,
-                    "confidence": result.confidence,
-                    "cited_pages": result.cited_pages,
-                    "think": result.think,
-                    "act": result.act,
-                    "verify": result.verify,
-                    "iterations": result.iterations,
-                },
-            )
+            ):
+                kind = ev.pop("kind")
+                yield _sse(kind, ev.get("payload", ev))
         except Exception as exc:
             logger.exception("SSE /reason/stream failed")
             yield _sse("error", {"message": str(exc)})
