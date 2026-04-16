@@ -15,15 +15,11 @@ export function useIngestWebSocket(jobId: string | null) {
     setError(null);
     setConnected(false);
 
-    const scheme = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const base = process.env.NEXT_PUBLIC_INGESTION_URL;
-    let url: string;
-    if (base) {
-      // Direct, bypassing the Next.js proxy (WS upgrade doesn't pass through rewrites reliably)
-      url = base.replace(/^http/, "ws") + `/ingest/ws/${jobId}`;
-    } else {
-      url = `${scheme}//${window.location.host}/api/ingestion/ingest/ws/${jobId}`;
-    }
+    // Always connect directly to the ingestion service. The Next.js dev server
+    // does not upgrade WebSocket connections through rewrites, so we bypass the
+    // /api/ingestion proxy entirely.
+    const base = process.env.NEXT_PUBLIC_INGESTION_URL || "http://localhost:8001";
+    const url = base.replace(/^http/, "ws") + `/ingest/ws/${jobId}`;
 
     let ws: WebSocket;
     try {

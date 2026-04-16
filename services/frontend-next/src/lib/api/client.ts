@@ -47,9 +47,17 @@ export async function request<T = unknown>(url: string, opts: RequestOptions = {
   const payload = contentType.includes("application/json") ? await resp.json() : await resp.text();
 
   if (!resp.ok) {
-    const detail = typeof payload === "object" && payload !== null && "detail" in payload
-      ? String((payload as { detail: unknown }).detail)
-      : resp.statusText;
+    let detail: string;
+    if (typeof payload === "object" && payload !== null && "detail" in payload) {
+      detail = String((payload as { detail: unknown }).detail);
+    } else if (resp.status === 502 || resp.status === 503 || resp.status === 504) {
+      detail = "Backend service unreachable. Is docker compose up?";
+    } else if (resp.status === 500 && !contentType.includes("application/json")) {
+      // Next.js dev returns 500 HTML when a rewrite target is down
+      detail = "Backend service unreachable (proxy error). Is docker compose up?";
+    } else {
+      detail = resp.statusText || `HTTP ${resp.status}`;
+    }
     throw new ApiError(resp.status, url, detail, payload);
   }
 
