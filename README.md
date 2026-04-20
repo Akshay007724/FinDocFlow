@@ -68,6 +68,44 @@
 
 ---
 
+## Frontend
+
+FinDocFlow ships **two frontends**. The Next.js app is the preferred experience going forward; the Streamlit UI is retained for now as a legacy fallback.
+
+### Next.js SPA (preferred) — `http://localhost:3000`
+
+Production-grade interactive UI on Next.js 14 + Tailwind + shadcn-style primitives + TanStack Query. Dark OLED design system from `design-system/findocflow/MASTER.md`. Features:
+
+- **Streaming reasoning** — Server-Sent Events render THINK → ACT → VERIFY phases live as they arrive from the reasoning service.
+- **Streaming reports** — Each of the 9 analyst sections streams in its own card with a per-section progress badge; up to 4 sections run concurrently.
+- **Live ingest progress** — Uploads push per-file progress via WebSocket (`/ingest/ws/{job_id}`) with a retry-friendly toast on failure.
+- **Command palette** — `⌘K` / `Ctrl+K` fuzzy navigation and quick actions.
+- **Vim-style nav** — `g d` Dashboard · `g l` Library · `g r` Reports · `g c` Chat · `g g` Graph · `g p` Pipeline.
+- **Service health HUD** — Top bar indicator polls every 15s; full breakdown on hover.
+
+Local dev:
+
+```bash
+cd services/frontend-next
+npm install
+npm run dev               # http://localhost:3000
+npm run test              # Vitest (28 unit tests)
+npm run typecheck         # tsc --noEmit
+npm run build             # next build
+```
+
+Docker:
+
+```bash
+docker compose up -d frontend-next
+```
+
+### Streamlit (legacy) — `http://localhost:8501`
+
+Kept for backward compatibility. Prefer the Next.js app for new work.
+
+---
+
 ## Quick Start (Docker Compose)
 
 ```bash
